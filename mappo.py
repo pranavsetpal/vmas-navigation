@@ -71,3 +71,52 @@ env = TransformedEnv(
     env,
     RewardSum(in_keys=[env.reward_key], out_keys=[("agents", "episode_reward")])
 )
+
+
+
+## Policy
+share_parameters_policy = True
+policy_net = torch.nn.Sequential(
+    MultiAgentMLP(
+        n_agent_inputs=env.observation_spec["agents", "observation"].shape[-1],
+        n_agent_outputs = 2 * env.action_spec.shape[-1],
+        n_agents=env.n_agents,
+        centralised=False,
+        share_params=share_parameters_policy,
+        device=device,
+        depth=2,
+        num_cells=256,
+        activation_class=torch.nn.Tanh
+    ),
+    NormalParamExtractor() # Separarte last dimension into 2 outputs: loc, non-negative scale
+)
+
+policy_module = TensorDictModule(
+    policy_net,
+    in_keys=[("agents", "observations")],
+    out_keys=[("agents", "loc"), ("agents", "scale")]
+)
+
+policy = ProbabilisticActor(
+    module=policy_module,
+    spec=env.unbatched_action_spec,
+    in_keys=[("agents", "loc"), ("agents", "scale")],
+    out_keys=[env.action_key],
+    distribution_class=TanhNormal,
+    distribution_kwargs={
+        "min": env.unbatched_action_spec[env.action_key].space.low,
+        "max": env.unbatched_action_spec[env.action_key].space.high
+    },
+    return_log_prob=True,
+    log_prob_key=("agents", "sample_log_prob")
+)
+
+
+## Render
+# with torch.no_grad():
+#     env.rollout(
+#         max_steps=max_steps,
+#         callback=lambda env, _: env.render(),
+#         auto_cast_to_device=True,
+#         break_when_any_done=False
+#     )
