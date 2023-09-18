@@ -171,6 +171,54 @@ GAE = loss_module.value_estimator
 optim = torch.optim.AdamW(loss_module.parameters(), lr)
 
 
+## Training loop
+pbar = tqdm(total=n_iters, desc="episode_reward_mean = 0")
+
+episode_reward_mean_list = []
+for tensordict_data in collector:
+    tensordict_data.set(
+        ("next", "done"),
+        tensordict_data.get(("next", "done"))
+            .unsqueeze(-1)
+            .expand(tensordict_data.get(("next", env.reward_key)).shape), # Match reward shape
+    )
+
+    with torch.no_grad():
+        GAE(
+            tensordict_data,
+            params=loss_module.critic_params,
+            target_params=loss_module.target_critic_params
+        )
+
+    data_view = tensordict_data.reshape(-1)
+    replay_buffer.extend(data_view)
+
+    for _ in range(num_epochs):
+        for _ in range(frames_per_batch // minibatch_size):
+            subdata = replay_buffer.sample()
+            loss_vals = loss_module(subdata)
+
+            loss_value = loss_vals["loss_objective"] + loss_vals["loss_critic"] + loss_vals["loss_entropy"]
+
+            loss_value.backward()
+
+            torch.nn.utils.clip_grad_norm_(
+                loss_module.parameters(),
+                max_grad_norm
+            )
+            optim.step()
+            optim.zero_grad()
+
+        collector.update_policy_weights_()
+
+        # Logging
+        done = tensordict_data.get(("next", "done"))
+        episode_reward_mean = tensordict_data.get(("next", "agents", "episode_reward"))[done].mean().item()
+        episode_reward_mean_list.append(episode_reward_mean)
+        pbar.set_description(f"episode_reward_mean = {episode_reward_mean}", refresh=False)
+        pbar.update()
+
+
 ## Render
 # with torch.no_grad():
 #     env.rollout(
