@@ -73,7 +73,6 @@ env = TransformedEnv(
 )
 
 
-
 ## Policy
 share_parameters_policy = True
 policy_net = torch.nn.Sequential(
@@ -93,7 +92,7 @@ policy_net = torch.nn.Sequential(
 
 policy_module = TensorDictModule(
     policy_net,
-    in_keys=[("agents", "observations")],
+    in_keys=[("agents", "observation")],
     out_keys=[("agents", "loc"), ("agents", "scale")]
 )
 
@@ -109,6 +108,28 @@ policy = ProbabilisticActor(
     },
     return_log_prob=True,
     log_prob_key=("agents", "sample_log_prob")
+)
+
+
+## Critic
+share_parameters_critic = True
+
+critic_net = MultiAgentMLP(
+    n_agent_inputs=env.observation_spec["agents", "observation"].shape[-1],
+    n_agent_outputs=1,
+    n_agents=env.n_agents,
+    centralised=True, # MAPPO
+    share_params=share_parameters_critic, # Only if same rewards for all agents
+    device=device,
+    depth=2,
+    num_cells=256,
+    activation_class=torch.nn.Tanh
+)
+
+critic = TensorDictModule(
+    module=critic_net,
+    in_keys=[("agents", "observation")],
+    out_keys=[("agents", "state_value")]
 )
 
 
