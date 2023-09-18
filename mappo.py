@@ -44,7 +44,7 @@ lr = 3e-4
 max_grad_norm = 1.0 # Max norm for gradients
 
 # PPO
-clip_eplison = 0.2 # max change between optimizations; clips loss
+clip_epsilon = 0.2 # max change between optimizations; clips loss
 gamma = 0.9 # discount_factor
 lmbda = 0.9 # lambda for generalised advantage estimation
 entropy_eps = 1e-4 # coefficient of the entropy term in the PPO loss
@@ -148,6 +148,27 @@ replay_buffer = ReplayBuffer(
     sampler=SamplerWithoutReplacement(),
     batch_size=minibatch_size
 )
+
+
+## Loss function
+loss_module = ClipPPOLoss(
+    actor=policy,
+    critic=critic,
+    clip_epsilon=clip_epsilon,
+    entropy_coef=entropy_eps,
+    normalize_advantage=False # IMP: Avoid normalizing across agent dim.
+)
+loss_module.set_keys(
+    reward=env.reward_key,
+    action=env.action_key,
+    sample_log_prob=("agents", "sample_log_prob"),
+    value=("agents", "state_value")
+)
+
+loss_module.make_value_estimator( ValueEstimators.GAE, gamma=gamma, lmbda=lmbda )
+GAE = loss_module.value_estimator
+
+optim = torch.optim.AdamW(loss_module.parameters(), lr)
 
 
 ## Render
