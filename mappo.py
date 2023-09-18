@@ -219,11 +219,18 @@ for tensordict_data in collector:
         pbar.update()
 
 
-## Render
-# with torch.no_grad():
-#     env.rollout(
-#         max_steps=max_steps,
-#         callback=lambda env, _: env.render(),
-#         auto_cast_to_device=True,
-#         break_when_any_done=False
-#     )
+## Results
+plt.plot(episode_reward_mean_list)
+plt.xlabel("Training iterations")
+plt.ylabel("Reward")
+plt.title("Episode reward mean")
+plt.show()
+
+# Render policy
+with torch.no_grad():
+    env.rollout(
+        max_steps=max_steps,
+        callback=lambda env, _: env.render(),
+        auto_cast_to_device=True,
+        break_when_any_done=False
+    )
