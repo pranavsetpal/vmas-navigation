@@ -133,6 +133,23 @@ critic = TensorDictModule(
 )
 
 
+## Data Management
+collector = SyncDataCollector(
+    env,
+    policy,
+    device=vmas_device,
+    storing_device=device,
+    frames_per_batch=frames_per_batch,
+    total_frames=total_frames
+)
+
+replay_buffer = ReplayBuffer(
+    storage=LazyTensorStorage(frames_per_batch, device=device), # STore fames_per_batch st each iter
+    sampler=SamplerWithoutReplacement(),
+    batch_size=minibatch_size
+)
+
+
 ## Render
 # with torch.no_grad():
 #     env.rollout(
