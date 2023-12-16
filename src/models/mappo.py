@@ -24,6 +24,7 @@ from torchrl.objectives import ClipPPOLoss, ValueEstimators
 from matplotlib import pyplot as plt
 from tqdm import tqdm
 from datetime import datetime
+from pathlib import Path
 
 torch.manual_seed(0)
 
@@ -196,4 +197,5 @@ plt.show()
 
 
 # Save model
+Path("./models/").mkdir(parents=True, exist_ok=True)
 torch.save(policy, f"./models/{datetime.now()}.pt")
