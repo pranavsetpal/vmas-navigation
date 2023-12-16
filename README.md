@@ -17,7 +17,7 @@ python -m src.models.mappo
 
 In order the render the trained model via
 ```bash
-python -m src.models.visualize
+python -m src.models.visualize <model-filename>
 ```
 
 You can change the hyperparameters by editing the `src/models/hyperparameters.py` file.
