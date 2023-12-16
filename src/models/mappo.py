@@ -28,7 +28,8 @@ from datetime import datetime
 torch.manual_seed(0)
 
 # Devices
-vmas_device = device = "cpu" if not torch.backends.cuda.is_built() else "cuda:0"
+# vmas_device = device = "cpu" if not torch.backends.cuda.is_built() else "cuda:0"
+vmas_device = device = "cpu"
 
 # Hyperparameters
 from src.models.hyperparameters import frames_per_batch, n_iters, total_frames # Sampling
@@ -195,4 +196,4 @@ plt.show()
 
 
 # Save model
-torch.save(policy, f"./models/policy-parameters.pt")
+torch.save(policy, f"./models/{datetime.now()}.pt")
